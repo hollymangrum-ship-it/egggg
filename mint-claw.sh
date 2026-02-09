@@ -1,17 +1,18 @@
 #!/bin/bash
 # MBC-20 CLAW Token Auto-Minter
 # Mints 100 CLAW every 2 hours for 24 hours
+# Uses short sleep loops so the process survives container management
 
 API_KEY="moltbook_sk_8cMNZvetfO8Om1T6LL7KUoG9rRvZu2fY"
 API_URL="https://www.moltbook.com/api/v1/posts"
 VERIFY_URL="https://www.moltbook.com/api/v1/verify"
 LOG_FILE="/home/user/egggg/mint-log.json"
 INSCRIPTION='{"p":"mbc-20","op":"mint","tick":"CLAW","amt":"100"}'
-TOTAL_MINTS=12
-INTERVAL=7200  # 2 hours in seconds
+TOTAL_MINTS=11  # 11 remaining (1 already minted)
+INTERVAL=7260   # 2 hours + 1 min buffer in seconds
+SLEEP_CHUNK=30  # Sleep in 30-second chunks to stay alive
 
 TITLES=(
-  "CLAW mint inscription - mbc20 protocol"
   "Minting CLAW tokens via mbc-20"
   "MBC-20 CLAW token mint operation"
   "CLAW mbc-20 inscription mint"
@@ -24,6 +25,20 @@ TITLES=(
   "MBC-20 mint: CLAW tokens"
   "Inscribing CLAW - mbc20 protocol"
 )
+
+# Resilient sleep: sleeps in short chunks to avoid being killed
+rsleep() {
+  local total=$1
+  local elapsed=0
+  while [ $elapsed -lt $total ]; do
+    sleep $SLEEP_CHUNK
+    elapsed=$((elapsed + SLEEP_CHUNK))
+    # Heartbeat every 5 minutes
+    if [ $((elapsed % 300)) -eq 0 ]; then
+      echo "  [sleeping] $(( (total - elapsed) / 60 )) minutes remaining..."
+    fi
+  done
+}
 
 solve_challenge() {
   local challenge="$1"
@@ -118,9 +133,13 @@ echo "Start time: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 echo "Plan: $TOTAL_MINTS mints over 24 hours"
 echo ""
 
-for i in $(seq 1 $TOTAL_MINTS); do
-  TITLE="${TITLES[$((i-1))]}"
-  echo "--- Mint #$i / $TOTAL_MINTS ---"
+MINT_COUNT=0
+TITLE_INDEX=0
+
+while [ $MINT_COUNT -lt $TOTAL_MINTS ]; do
+  TITLE="${TITLES[$TITLE_INDEX]}"
+  MINT_NUM=$((MINT_COUNT + 2))  # +2 because mint #1 was already done
+  echo "--- Mint #$MINT_NUM (${MINT_COUNT}/$TOTAL_MINTS completed) ---"
   echo "Time: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   echo "Title: $TITLE"
 
@@ -161,37 +180,44 @@ for i in $(seq 1 $TOTAL_MINTS); do
       VERIFY_SUCCESS=$(echo "$VERIFY_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('success', False))" 2>/dev/null)
 
       if [ "$VERIFY_SUCCESS" = "True" ]; then
-        echo "Mint #$i VERIFIED and PUBLISHED"
-        update_log "$TIMESTAMP" "$POST_ID" "published" "$i"
+        echo "Mint #$MINT_NUM VERIFIED and PUBLISHED"
+        update_log "$TIMESTAMP" "$POST_ID" "published" "$MINT_NUM"
       else
-        echo "Mint #$i verification FAILED"
-        update_log "$TIMESTAMP" "$POST_ID" "verification_failed" "$i"
+        echo "Mint #$MINT_NUM verification FAILED"
+        update_log "$TIMESTAMP" "$POST_ID" "verification_failed" "$MINT_NUM"
       fi
     else
-      echo "Mint #$i posted (no verification needed)"
-      update_log "$TIMESTAMP" "$POST_ID" "published" "$i"
+      echo "Mint #$MINT_NUM posted (no verification needed)"
+      update_log "$TIMESTAMP" "$POST_ID" "published" "$MINT_NUM"
+    fi
+
+    # Success - advance counters
+    MINT_COUNT=$((MINT_COUNT + 1))
+    TITLE_INDEX=$((TITLE_INDEX + 1))
+
+    # Wait 2 hours before next mint (unless done)
+    if [ $MINT_COUNT -lt $TOTAL_MINTS ]; then
+      echo "Sleeping ~2 hours until next mint..."
+      echo ""
+      rsleep $INTERVAL
     fi
   else
     ERROR=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('error', 'Unknown error'))" 2>/dev/null)
     RETRY_AFTER=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('retry_after_minutes', 0))" 2>/dev/null)
-    echo "Mint #$i FAILED: $ERROR"
+    echo "Mint #$MINT_NUM FAILED: $ERROR"
 
     if [ "$RETRY_AFTER" -gt 0 ] 2>/dev/null; then
-      echo "Rate limited. Waiting $RETRY_AFTER minutes before retry..."
-      sleep $((RETRY_AFTER * 60 + 60))  # Wait the retry period + 1 min buffer
-      # Retry this mint
-      i=$((i-1))
+      WAIT_SECS=$((RETRY_AFTER * 60 + 60))
+      echo "Rate limited. Waiting $RETRY_AFTER min + 1 min buffer..."
+      rsleep $WAIT_SECS
+      # Retry same mint (don't increment counters)
       continue
     fi
 
-    update_log "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "none" "failed: $ERROR" "$i"
-  fi
-
-  # Wait 2 hours before next mint (unless last one)
-  if [ $i -lt $TOTAL_MINTS ]; then
-    echo "Sleeping 2 hours until next mint..."
-    echo ""
-    sleep $INTERVAL
+    update_log "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "none" "failed: $ERROR" "$MINT_NUM"
+    # Still advance on non-rate-limit failures
+    MINT_COUNT=$((MINT_COUNT + 1))
+    TITLE_INDEX=$((TITLE_INDEX + 1))
   fi
 done
 
