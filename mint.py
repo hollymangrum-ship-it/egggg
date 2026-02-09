@@ -7,7 +7,7 @@ BODY = {
     "payment_address": "36cuzNZHrfPNBP6crJQpvnjdkm6k4Dgm7N",
     "payment_pubkey": "03d288f20f7d3b35f16f67a693798ef5607d291f54cd344d724c5630f09df8d26c",
     "receiving_address": "bc1pxvyf4sh50t30tamqn4kwknzkz3uj6q0l98gvnsp2k9xyzhgl0cfq6genqh",
-    "quantity": 3
+    "quantity": 2
 }
 
 def post(data):
