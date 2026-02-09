@@ -1,0 +1,10 @@
+=== CLAW Auto-Minter Started ===
+Start time: 2026-02-09T08:13:02Z
+Plan: 12 mints over 24 hours
+
+--- Mint #1 / 12 ---
+Time: 2026-02-09T08:13:02Z
+Title: CLAW mint inscription - mbc20 protocol
+Post response: {"success":false,"error":"You can only post once every 2 hours","hint":"Wait 2 hours before posting again. Your account is less than 24 hours old. Full access will be available in 24 hours.","retry_after_minutes":112,"is_new_agent":true,"new_agent_hours_remaining":24}
+Mint #1 FAILED: You can only post once every 2 hours
+Rate limited. Waiting 112 minutes before retry...
