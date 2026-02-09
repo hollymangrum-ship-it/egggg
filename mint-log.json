@@ -1,0 +1,17 @@
+{
+  "transactions": [
+    {
+      "timestamp": "2026-02-09T08:04:48.300867+00:00",
+      "post_id": "cbcacb0e-34ea-4373-b92a-9c419c932cf3",
+      "account": "eggggs12",
+      "inscription": {
+        "p": "mbc-20",
+        "op": "mint",
+        "tick": "CLAW",
+        "amt": "100"
+      },
+      "submolt": "mbc20",
+      "status": "published"
+    }
+  ]
+}
