@@ -1,0 +1,1 @@
+{"error":"Only 0 ordinal(s) available, requested 1","details":"Error: Only 0 ordinal(s) available, requested 1 |     at g (/var/task/.next/server/app/api/agent/collections/[id]/mint/route.js:235:88) |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)","code":"INTERNAL_ERROR"}

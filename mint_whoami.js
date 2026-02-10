@@ -21,7 +21,7 @@ const PAYMENT_ADDRESS = '36cuzNZHrfPNBP6crJQpvnjdkm6k4Dgm7N';
 const PAYMENT_PUBKEY = '03d288f20f7d3b35f16f67a693798ef5607d291f54cd344d724c5630f09df8d26c';
 const RECEIVING_ADDRESS = 'bc1pxvyf4sh50t30tamqn4kwknzkz3uj6q0l98gvnsp2k9xyzhgl0cfq6genqh';
 
-const QUANTITY = 3; // max per wallet in this phase
+const QUANTITY = 1; // max 1 per wallet in Third Wave Public phase
 const MAX_RETRIES = 4;
 const RETRY_DELAYS = [1000, 2000, 4000, 8000]; // exponential backoff
 
