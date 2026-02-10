@@ -1,9 +1,19 @@
 #!/usr/bin/env node
 
-const API_KEY = process.env.MOLTBOOK_API_KEY;
+const fs = require('fs');
+const path = require('path');
+
+const CREDS_PATH = path.join(require('os').homedir(), '.config', 'moltbook', 'credentials.json');
+
+let API_KEY = process.env.MOLTBOOK_API_KEY;
 if (!API_KEY) {
-  console.error('Error: MOLTBOOK_API_KEY environment variable is required');
-  process.exit(1);
+  try {
+    const creds = JSON.parse(fs.readFileSync(CREDS_PATH, 'utf8'));
+    API_KEY = creds.apiKey;
+  } catch {
+    console.error('Error: Set MOLTBOOK_API_KEY or save credentials to ~/.config/moltbook/credentials.json');
+    process.exit(1);
+  }
 }
 
 const amount = process.argv[2] || '1';
